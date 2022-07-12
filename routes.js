@@ -4,14 +4,20 @@ const router = express.Router();
 const { User, Course } = require('./models');
 
 router.use(express.json());
+
 // Handler function to wrap each route.
 function asyncHandler(cb) {
   return async (req, res, next) => {
     try {
       await cb(req, res, next);
     } catch (error) {
-      // Forward error to the global error handler
-      next(error);
+      if (error.name === 'SequelizeValidationError' || error.name === 'SequelizeUniqueConstraintError') {
+        const errors = error.errors.map(err => err.message);
+        res.status(400).json({ errors });
+      } else {
+        // Forward error to the global error handler
+        next(error);
+      }
     }
   }
 }
@@ -20,8 +26,12 @@ function asyncHandler(cb) {
 // ADD AUTHENTICATEDUSER**
 router.get('/users', asyncHandler( async(req, res) => {
   // let user = req.currentUser;
-  res.status(200).json(user);
-
+  res.status(200).json({
+    id: user.id,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    emailAddress: user.emailAddress
+  });
 }));
 
 // POST route creates a new user & sets Location header to "/"
@@ -32,15 +42,14 @@ router.post('/users', asyncHandler( async(req, res) => {
 
 // GET route returns ALL courses, including User associated with each course
 router.get('/courses', asyncHandler( async(req, res) => {
-  let courses = await Course.findAll();
+  let courses = await Course.findAll({
   include: [
     {
       model: User,
-      attributes: [
-        'firstName', 'lastName', 'emailAddress'
-      ]
-    }
-  ]
+      as: "administrator",
+      attributes: [ 'firstName', 'lastName', 'emailAddress' ]
+    }]
+  });
   res.json(courses);
 }));
 
@@ -52,15 +61,15 @@ router.get('/courses/:id', asyncHandler( async(req, res) => {
     },
     include: [
       {
-        model: User, 
+        model: User,
+        as: "administrator", 
         attributes: ['firstName', 'lastName', 'emailAddress'],
-      },
-    ],
+      }]
   });
     if (course) {
       res.status(200).json(course);
     } else {
-      res.status(404).json({ message: "Course not found, or does not exist."});
+      res.status(404).json({ "message": "Course not found, or does not exist."});
     }
 
 }));
@@ -69,7 +78,7 @@ router.get('/courses/:id', asyncHandler( async(req, res) => {
 // POST route creates a new course, sets Location header to URI of newly created course
 // ADD AUTHENTICATEDUSER!!! 
 router.post('/courses', asyncHandler( async(req, res) => {
-  const user = req.currentUser;
+  // const user = req.currentUser;
   let course = await Course.create(req.body);
   res.status(201).setHeader('Location', `/api/courses/${course.id}`).end();
 

@@ -2,30 +2,16 @@
 const express = require('express');
 const router = express.Router();
 const { User, Course } = require('./models');
+const { asyncHandler } = require('./middleware/async-handler');
+const { authenticateUser } = require('./middleware/auth-user');
 
 router.use(express.json());
 
-// Handler function to wrap each route.
-function asyncHandler(cb) {
-  return async (req, res, next) => {
-    try {
-      await cb(req, res, next);
-    } catch (error) {
-      if (error.name === 'SequelizeValidationError' || error.name === 'SequelizeUniqueConstraintError') {
-        const errors = error.errors.map(err => err.message);
-        res.status(400).json({ errors });
-      } else {
-        // Forward error to the global error handler
-        next(error);
-      }
-    }
-  }
-}
 
 // GET route returns all properties + values for currently authenticated User 
 // ADD AUTHENTICATEDUSER**
-router.get('/users', asyncHandler( async(req, res) => {
-  // let user = req.currentUser;
+router.get('/users', authenticateUser, asyncHandler( async(req, res) => {
+  const user = req.currentUser;
   res.status(200).json({
     id: user.id,
     firstName: user.firstName,
@@ -77,8 +63,7 @@ router.get('/courses/:id', asyncHandler( async(req, res) => {
 
 // POST route creates a new course, sets Location header to URI of newly created course
 // ADD AUTHENTICATEDUSER!!! 
-router.post('/courses', asyncHandler( async(req, res) => {
-  // const user = req.currentUser;
+router.post('/courses', authenticateUser, asyncHandler( async(req, res) => {
   let course = await Course.create(req.body);
   res.status(201).setHeader('Location', `/api/courses/${course.id}`).end();
 
@@ -87,8 +72,8 @@ router.post('/courses', asyncHandler( async(req, res) => {
 
 // PUT route updates corresponding course
 // ADD AUTHENTICATION!!
-router.put('/courses/:id', asyncHandler( async(req, res) => {
-  // const user = req.currentUser;
+router.put('/courses/:id', authenticateUser, asyncHandler( async(req, res) => {
+  const user = req.currentUser;
   let course = await Course.findByPk(req.params.id);
   if (course) {
     if (user.id == course.userId) {
@@ -107,8 +92,8 @@ router.put('/courses/:id', asyncHandler( async(req, res) => {
 
 // DELETE route deletes corresponding course
 //ADD AUTHENTICATION!!!
-router.delete('/courses/:id', asyncHandler( async(req, res) => {
-  // const user = req.currentUser;
+router.delete('/courses/:id', authenticateUser, asyncHandler( async(req, res) => {
+  const user = req.currentUser;
   let course = await Course.findByPk(req.params.id);
   if (course) {
     if (user.id == course.userId) {

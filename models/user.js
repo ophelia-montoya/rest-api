@@ -51,7 +51,7 @@ module.exports = (sequelize) => {
       }
     },
     password: {
-      type: DataTypes.VIRTUAL,
+      type: DataTypes.STRING,
       allowNull: false, 
       set(val) {
         if (val) {
@@ -62,10 +62,6 @@ module.exports = (sequelize) => {
       validate: {
         notNull: {
           msg: 'A password is required'
-        },
-        len: {
-          args: [8, 20],
-          msg: 'Password should be between 8 and 10 characters long'
         }
       }
     }

@@ -2,6 +2,8 @@
 const express = require('express');
 const router = express.Router();
 const { User, Course } = require('./models');
+
+// import middleware
 const { asyncHandler } = require('./middleware/async-handler');
 const { authenticateUser } = require('./middleware/auth-user');
 
@@ -9,7 +11,6 @@ router.use(express.json());
 
 
 // GET route returns all properties + values for currently authenticated User 
-// ADD AUTHENTICATEDUSER**
 router.get('/users', authenticateUser, asyncHandler( async(req, res) => {
   const user = req.currentUser;
   res.status(200).json({
@@ -31,7 +32,7 @@ router.get('/courses', asyncHandler( async(req, res) => {
   let courses = await Course.findAll({
   include: [
     {
-      model: User,
+      model: User, //includes User (administrator) data associated with each course
       as: "administrator",
       attributes: [ 'firstName', 'lastName', 'emailAddress' ]
     }]
@@ -62,7 +63,6 @@ router.get('/courses/:id', asyncHandler( async(req, res) => {
 
 
 // POST route creates a new course, sets Location header to URI of newly created course
-// ADD AUTHENTICATEDUSER!!! 
 router.post('/courses', authenticateUser, asyncHandler( async(req, res) => {
   let course = await Course.create(req.body);
   res.status(201).setHeader('Location', `/api/courses/${course.id}`).end();
@@ -71,7 +71,6 @@ router.post('/courses', authenticateUser, asyncHandler( async(req, res) => {
 
 
 // PUT route updates corresponding course
-// ADD AUTHENTICATION!!
 router.put('/courses/:id', authenticateUser, asyncHandler( async(req, res) => {
   const user = req.currentUser;
   let course = await Course.findByPk(req.params.id);
@@ -91,7 +90,6 @@ router.put('/courses/:id', authenticateUser, asyncHandler( async(req, res) => {
 
 
 // DELETE route deletes corresponding course
-//ADD AUTHENTICATION!!!
 router.delete('/courses/:id', authenticateUser, asyncHandler( async(req, res) => {
   const user = req.currentUser;
   let course = await Course.findByPk(req.params.id);

@@ -34,17 +34,17 @@ module.exports = (sequelize) => {
         }
       }
     }, 
-    emailAddress: {
+    emailAddress: { // Adds validation to email
       type: DataTypes.STRING,
       allowNull: false,
-      unique: {
+      unique: { // ...to ensure email isn't already associated with existing user...
         msg: 'The email you entered already exists'
       },
       validate: {
         notNull: {
           msg: 'An email address is required'
         },
-        isEmail: {
+        isEmail: { // and to ensure that it's properly formatted
           msg: 'Please provide a valid email address'
         }
       }

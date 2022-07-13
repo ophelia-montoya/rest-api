@@ -11,6 +11,7 @@ router.use(express.json());
 
 
 // GET route returns all properties + values for currently authenticated User 
+// Filters our password, createdAt, and updatedAt properties
 router.get('/users', authenticateUser, asyncHandler( async(req, res) => {
   const user = req.currentUser;
   res.status(200).json({
@@ -22,12 +23,14 @@ router.get('/users', authenticateUser, asyncHandler( async(req, res) => {
 }));
 
 // POST route creates a new user & sets Location header to "/"
+// Incorporates SequelizeUniqueConstraintError validation in async-handler.js
 router.post('/users', asyncHandler( async(req, res) => {
   await User.create(req.body);
   res.status(201).setHeader('Location', '/').end();
 }));
 
 // GET route returns ALL courses, including User associated with each course
+// Filters out createdAt and updatedAt properties from data
 router.get('/courses', asyncHandler( async(req, res) => {
   let courses = await Course.findAll({
   include: [
@@ -94,7 +97,7 @@ router.delete('/courses/:id', authenticateUser, asyncHandler( async(req, res) =>
   const user = req.currentUser;
   let course = await Course.findByPk(req.params.id);
   if (course) {
-    if (user.id == course.userId) {
+    if (user.id == course.userId) { // ensures currently authenticated user is the owner/administrator
       await course.destroy();
       res.status(204).end();
     } else {
